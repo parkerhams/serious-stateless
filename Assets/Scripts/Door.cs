@@ -2,44 +2,61 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Animator))]
-
-public class Door : InteractiveObject
+public class Door : MonoBehaviour, IActivatable
 {
+    [SerializeField]
+    string nameText;
+
+    [Tooltip("If you set a key, the door will be locked.")]
+    [SerializeField]
+    InventoryObject key;
 
     private Animator animator;
+    private bool isLocked, isOpen;
+    private List<InventoryObject> playerInventory;
 
-    private bool isOpen = false;
-
-    private int shouldOpenAnimParamater = Animator.StringToHash("shouldOpen");
-
-    /// <summary>
-    /// Using a constructor to initialize the Display Text in the editor.
-    /// </summary>
-    /// 
-    public Door()
+    public string NameText
     {
-        displayText = nameof(Door);
+        get
+        {
+            string toReturn = nameText;
+
+            if (isOpen)
+                toReturn = ""; // So it doesn't look like you can open the door anymore.
+            else if (isLocked && !HasKey)
+                toReturn += " (LOCKED)";
+            else if (isLocked && HasKey)
+                toReturn += string.Format(" (use {0})", key.NameText);
+
+            return toReturn;
+        }
     }
 
-    protected override void Awake()
+    private bool HasKey
     {
-        base.Awake();
-        animator = GetComponent<Animator>();
+        get
+        {
+            return playerInventory.Contains(key);
+        }
     }
 
-    public override void InteractWith()
+    public void DoActivate()
     {
         if (!isOpen)
         {
-
-        base.InteractWith();
-
-        animator.SetBool(shouldOpenAnimParamater, true);
-        displayText = string.Empty;
-        isOpen = true;
+            if (!isLocked || HasKey)
+            {
+                animator.SetBool("isDoorOpen", true); 
+                isOpen = true;
+            }
         }
-
     }
 
+    // Use this for initialization
+    void Start () 
+	{
+        animator = GetComponent<Animator>();
+        playerInventory = FindObjectOfType<InventoryMenu>().PlayerInventory;
+        isLocked = key != null;
+	}
 }
